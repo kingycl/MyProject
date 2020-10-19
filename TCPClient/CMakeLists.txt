@@ -1,0 +1,9 @@
+set(target TCPClient)
+
+aux_source_directory(${CMAKE_HOME_DIRECTORY}/TCPClient ${target}_SRC)
+
+add_executable(${target} ${${target}_SRC})
+
+if(WIN32)
+    target_link_libraries(${target} PRIVATE ws2_32.lib)
+endif()
