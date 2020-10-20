@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.14)
 
 PROJECT(test)
 
-add_executable(Hello Test.cpp)
-
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_HOME_DIRECTORY}/bin)
 set(LIBRARY_OUTPUT_PATH  ${CMAKE_HOME_DIRECTORY}/lib)
 
