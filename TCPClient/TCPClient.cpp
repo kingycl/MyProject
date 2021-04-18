@@ -2,53 +2,123 @@
 // Created by king_ on 2020/10/18.
 //
 
-#include "TCPClient.h"
+#include "CellTime.h"
 #include "NetMessage.h"
+#include "MyClient.h"
+#include "CellLog.h"
+#include <atomic>
 
-#define WIN32_LEAN_AND_MEAN
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include<Windows.h>
-#include<WinSock2.h>
+bool g_bRun = true;
 
-#include <iostream>
-
-using namespace std;
-
-int main()
-{
-    WORD ver = MAKEWORD(2, 2);
-    WSADATA dat;
-    WSAStartup(ver, &dat);
-
-    SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-    sockaddr_in addr_ = {};
-    addr_.sin_family = AF_INET;
-    addr_.sin_port = htons(4567);
-    addr_.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
-    connect(sock, reinterpret_cast<sockaddr*>(&addr_), sizeof(sockaddr));
-
+void cmdThread() {
     while (true) {
-        char cmdBuf[128] = {};
-        scanf_s("%s", cmdBuf, 128);
-        send(sock, cmdBuf, strlen(cmdBuf) + 1, 0);
-
-        char recvBuf[128];
-        int rlen = recv(sock, recvBuf, sizeof(recvBuf), 0);
-        if (rlen <= 0) {
-            printf("Error MSG.\n");
+        char cmdBuf[256] = {};
+        scanf("%s", cmdBuf);
+        if (0 == strcmp(cmdBuf, "exit")) {
+            g_bRun = false;
+            CELLLog::Info("退出cmdThread线程\n");
             break;
+        } else {
+            CELLLog::Info("不支持的命令。\n");
         }
-        printf("receive msg len : %d , msg : %s.\n", rlen, recvBuf);
     }
-    char recvBuf[128];
-    int len = recv(sock, recvBuf, sizeof(recvBuf), 0);
-    printf("receive msg len : %d , msg : %s.\n", len, recvBuf);
+}
 
-    closesocket(sock);
+//客户端数量
+const int cCount = 1000;
+//发送线程数量
+const int tCount = 4;
+//客户端数组
+EasyTcpClient *client[cCount];
+std::atomic_int sendCount(0);
+std::atomic_int readyCount(0);
 
-    WSACleanup();
-    cout << "Hello Client!\n" << endl;
+void recvThread(int begin, int end) {
+    //CELLTimestamp t;
+    while (g_bRun) {
+        for (int n = begin; n < end; n++) {
+            //if (t.getElapsedSecond() > 3.0 && n == begin)
+            //	continue;
+            client[n]->OnRun();
+        }
+    }
+}
 
+void sendThread(int id) {
+    CELLLog::Info("thread<%d>,start\n", id);
+    //4个线程 ID 1~4
+    int c = cCount / tCount;
+    int begin = (id - 1) * c;
+    int end = id * c;
+
+    for (int n = begin; n < end; n++) {
+        client[n] = new MyClient();
+    }
+    for (int n = begin; n < end; n++) {
+        client[n]->Connect("192.168.3.122", 4567);
+    }
+    //心跳检测 死亡计时
+    CELLLog::Info("thread<%d>,Connect<begin=%d, end=%d>\n", id, begin, end);
+
+    readyCount++;
+    while (readyCount < tCount) {//等待其它线程准备好发送数据
+        std::chrono::milliseconds t(10);
+        std::this_thread::sleep_for(t);
+    }
+    //
+    std::thread t1(recvThread, begin, end);
+    t1.detach();
+    //
+    netmsg_Login login[1];
+    for (int n = 0; n < 1; n++) {
+        strcpy(login[n].userName, "lyd");
+        strcpy(login[n].PassWord, "lydmm");
+    }
+    // const int nLen = sizeof(login);
+
+    while (g_bRun) {
+        for (int n = begin; n < end; n++) {
+            if (SOCKET_ERROR != client[n]->SendData(login)) {
+                sendCount++;
+            }
+        }
+        std::chrono::milliseconds t(99);
+        std::this_thread::sleep_for(t);
+    }
+
+    for (int n = begin; n < end; n++) {
+        client[n]->Close();
+        delete client[n];
+    }
+
+    CELLLog::Info("thread<%d>,exit\n", id);
+}
+
+int main() {
+    CELLLog::Instance().setLogPath("clientLog.txt", "w");
+    //启动UI线程
+    std::thread t1(cmdThread);
+    t1.detach();
+
+    //启动发送线程
+    for (int n = 0; n < tCount; n++) {
+        std::thread t1(sendThread, n + 1);
+        t1.detach();
+    }
+
+    CELLTimestamp tTime;
+
+    while (g_bRun) {
+        auto t = tTime.getElapsedSecond();
+        if (t >= 1.0) {
+            CELLLog::Info("thread<%d>,clients<%d>,time<%lf>,send<%d>\n", tCount, cCount, t, (int) (sendCount / t));
+            sendCount = 0;
+            tTime.update();
+        }
+        std::chrono::milliseconds ts(1);
+        std::this_thread::sleep_for(ts);
+    }
+
+    CELLLog::Info("已退出。\n");
     return 0;
 }
