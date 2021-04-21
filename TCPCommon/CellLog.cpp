@@ -41,25 +41,3 @@ void CELLLog::setLogPath(const char *logPath, const char *mode) {
         Info("CELLLog::setLogPath failed,<%s,%s>\n", logPath, mode);
     }
 }
-
-void CELLLog::Info(const char *pformat, ...) {
-    CELLLog *pLog = &Instance();
-
-    va_list pArg;
-    va_start(pArg, pformat);
-    pLog->_taskServer.addTask([=]() {
-        if (pLog->_logFile) {
-            auto t = std::chrono::system_clock::now();
-            auto tNow = std::chrono::system_clock::to_time_t(t);
-
-            std::tm *now = std::gmtime(&tNow);
-            fprintf(pLog->_logFile, "%s", "Info ");
-            fprintf(pLog->_logFile, "[%d-%d-%d %d:%d:%d]", now->tm_year + 1900, now->tm_mon + 1, now->tm_mday,
-                    now->tm_hour, now->tm_min, now->tm_sec);
-            fprintf(pLog->_logFile, pformat, pArg);
-            fflush(pLog->_logFile);
-        }
-        printf(pformat, pArg);
-    });
-    va_end(pArg);
-}

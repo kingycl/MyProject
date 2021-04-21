@@ -6,7 +6,8 @@
 #include "CellLog.h"
 #include "CellNetWork.h"
 
-#include<mutex>
+#include <mutex>
+#include <iostream>
 
 EasyTcpServer::EasyTcpServer() {
     _sock = INVALID_SOCKET;
@@ -174,7 +175,8 @@ void EasyTcpServer::OnRun(CELLThread *pThread) {
 void EasyTcpServer::time4msg() {
     auto t1 = _tTime.getElapsedSecond();
     if (t1 >= 1.0) {
-        CELLLog::Info("thread<%d>,time<%lf>,socket<%d>,clients<%d>,recv<%d>,msg<%d>\n", (int) _cellServers.size(), t1,
+        CELLLog::Info("thread<%d>,time<%lf>,socket<%d>,clients<%d>,recv<%d>,msg<%d>\n",
+                      static_cast<int>(_cellServers.size()), t1,
                       _sock, (int) _clientCount, (int) (_recvCount / t1), (int) (_msgCount / t1));
         _recvCount = 0;
         _msgCount = 0;

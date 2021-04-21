@@ -16,7 +16,7 @@
 #define CLIENT_SEND_BUFF_TIME 200
 
 //客户端数据类型
-class EXPORT_DLL CELLClient {
+class CELLClient {
 public:
     int id = -1;
     //所属serverid

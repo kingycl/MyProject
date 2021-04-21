@@ -7,7 +7,7 @@
 
 #include "Cell.h"
 
-class EXPORT_DLL CELLNetWork {
+class CELLNetWork {
 private:
     CELLNetWork() {
 #ifdef _WIN32

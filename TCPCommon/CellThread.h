@@ -12,12 +12,7 @@
 #include <functional>
 #include <thread>
 
-class CELLThread;
-
-template
-class EXPORT_DLL std::function<void(CELLThread *)>;
-
-class EXPORT_DLL CELLThread {
+class CELLThread {
 public:
     static void Sleep(time_t dt) {
         std::chrono::milliseconds t(dt);

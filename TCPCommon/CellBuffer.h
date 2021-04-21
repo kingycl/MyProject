@@ -7,7 +7,7 @@
 
 #include"Cell.h"
 
-class EXPORT_DLL CELLBuffer {
+class CELLBuffer {
 public:
     CELLBuffer(int nSize = 8192);
 

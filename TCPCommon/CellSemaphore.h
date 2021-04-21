@@ -10,7 +10,7 @@
 #include <condition_variable>
 
 //信号量
-class EXPORT_DLL CELLSemaphore {
+class CELLSemaphore {
 public:
     //阻塞当前线程
     void wait();

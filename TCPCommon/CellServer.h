@@ -16,7 +16,7 @@
 #include <mutex>
 
 //网络消息接收处理服务类
-class EXPORT_DLL CELLServer {
+class CELLServer {
 public:
     CELLServer(int id);
 

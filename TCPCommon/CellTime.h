@@ -10,7 +10,7 @@
 
 using namespace std::chrono;
 
-class EXPORT_DLL CELLTime {
+class CELLTime {
 public:
     //获取当前时间戳 (毫秒)
     static time_t getNowInMilliSec() {

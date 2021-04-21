@@ -11,7 +11,7 @@
 #include <list>
 
 //执行任务的服务类型
-class EXPORT_DLL CELLTaskServer {
+class CELLTaskServer {
 public:
     //所属serverid
     int serverId = -1;

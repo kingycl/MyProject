@@ -9,7 +9,7 @@
 #include"CellClient.h"
 
 //自定义
-class EXPORT_DLL CELLServer;
+class CELLServer;
 
 //网络事件接口
 class INetEvent {

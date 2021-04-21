@@ -11,5 +11,4 @@ endif ()
 
 add_subdirectory(TCPServer)
 add_subdirectory(TCPClient)
-add_subdirectory(TCPCommon)
-#add_subdirectory(MemoryPool)
+add_subdirectory(MemoryPool)

@@ -12,7 +12,6 @@
     #define _WINSOCK_DEPRECATED_NO_WARNINGS
     #include<Windows.h>
     #include<WinSock2.h>
-    #define EXPORT_DLL _declspec(dllexport)
 #else
 
     #include<unistd.h> //uni std
@@ -24,7 +23,6 @@
     #define SOCKET int
     #define INVALID_SOCKET  (SOCKET)(~0)
     #define SOCKET_ERROR            (-1)
-    #define EXPORT_DLL
 #endif
 
 #include <cstdio>
