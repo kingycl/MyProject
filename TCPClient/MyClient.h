@@ -1,20 +1,8 @@
 //
-// Created by king_ on 2021/4/18.
+// Created by king_ on 2021/6/13.
 //
 
-#ifndef TEST_MYCLIENT_H
-#define TEST_MYCLIENT_H
+#ifndef EASYIOCPCLIENT_HPP_MYCLIENT_H
+#define EASYIOCPCLIENT_HPP_MYCLIENT_H
 
-#include "EasyTcpClient.h"
-#include "NetMessage.h"
-
-class MyClient : public EasyTcpClient {
-public:
-    //响应网络消息
-    virtual void OnNetMsg(netmsg_DataHeader *header);
-
-private:
-
-};
-
-#endif //TEST_MYCLIENT_H
+#endif //EASYIOCPCLIENT_HPP_MYCLIENT_H
