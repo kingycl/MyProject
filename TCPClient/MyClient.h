@@ -2,7 +2,7 @@
 // Created by king_ on 2021/6/13.
 //
 
-#ifndef EASYIOCPCLIENT_HPP_MYCLIENT_H
-#define EASYIOCPCLIENT_HPP_MYCLIENT_H
+#ifndef MYCLIENT_H
+#define MYCLIENT_H
 
-#endif //EASYIOCPCLIENT_HPP_MYCLIENT_H
+#endif//MYCLIENT_H

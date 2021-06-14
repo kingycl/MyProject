@@ -2,7 +2,7 @@
 // Created by king_ on 2021/6/13.
 //
 
-#ifndef EASYIOCPCLIENT_HPP_MYSERVER_H
-#define EASYIOCPCLIENT_HPP_MYSERVER_H
+#ifndef MYSERVER_H
+#define MYSERVER_H
 
-#endif //EASYIOCPCLIENT_HPP_MYSERVER_H
+#endif//MYSERVER_H
