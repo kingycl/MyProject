@@ -3,6 +3,7 @@
 //
 
 #include "TcpClient.h"
+#include <cstring>
 #include <iostream>
 using namespace std;
 
@@ -24,7 +25,7 @@ bool TcpClient::InitSocket() {
         return false;
     }
 
-    cout << "Init Socket Success!" << endl;
+    cout << "建立Socket=<" << m_sock << ">成功..." << endl;
     return true;
 }
 
@@ -38,12 +39,13 @@ bool TcpClient::Connect(const char *ip, unsigned short port) {
 #else
     sin.sin_addr.s_addr = inet_addr(ip);
 #endif
+    cout << "<socket=" << m_sock << ">正在连接服务器<" << ip << ":" << port << ">..." << endl;
     if (connect(m_sock, reinterpret_cast<sockaddr *>(&sin), sizeof(sin)) == SOCKET_ERROR) {
-        cout << "Connect to server Error!" << endl;
+        cout << "<socket=" << m_sock << ">错误，连接服务器<" << ip << ":" << port << ">失败..." << endl;
         return false;
     }
 
-    cout << "Connect to server Success!" << endl;
+    cout << "<socket=" << m_sock << ">连接服务器<" << ip << ":" << port << ">成功..." << endl;
     return true;
 }
 
@@ -58,7 +60,7 @@ void TcpClient::Close() {
 }
 
 bool TcpClient::OnRun() {
-    while (IsRun()) {
+    if (IsRun()) {
         fd_set fdRead;
 
         FD_ZERO(&fdRead);
@@ -67,19 +69,22 @@ bool TcpClient::OnRun() {
         timeval t = {0, 0};
         int ret = select(m_sock + 1, &fdRead, nullptr, nullptr, &t);
         if (ret < 0) {
-            printf("select exit!");
+            cout << "select exit!" << endl;
+            Close();
             return false;
         }
 
         if (FD_ISSET(m_sock, &fdRead)) {
             FD_CLR(m_sock, &fdRead);
             if (-1 == ReceiveData()) {
-                printf("select任务结束2\n");
+                cout << "select任务结束2" << endl;
+                Close();
                 return false;
             }
         }
+        return true;
     }
-    return true;
+    return false;
 }
 
 bool TcpClient::IsRun() {
@@ -90,27 +95,34 @@ void TcpClient::OnNetMsg(DataHeader *header) {
     switch (header->cmd) {
         case CMD_LOGIN_RESULT: {
             LoginResult *login = (LoginResult *) header;
-            printf("收到服务端消息：CMD_LOGIN_RESULT,数据长度：%d \n", login->dataLength);
+            cout << "收到服务端消息:CMD_LOGIN_RESULT,数据长度:" << login->dataLength << endl;
         } break;
         case CMD_LOGOUT_RESULT: {
             LogoutResult *logout = (LogoutResult *) header;
-            printf("收到服务端消息：CMD_LOGOUT_RESULT,数据长度：%d \n", logout->dataLength);
+            cout << "收到服务端消息:CMD_LOGOUT_RESULT,数据长度:" << logout->dataLength << endl;
         } break;
     }
 }
 
 int TcpClient::ReceiveData() {
-    char szRecv[4096] = {};
-    int len = recv(m_sock, szRecv, sizeof(DataHeader), 0);
+    int len = recv(m_sock, m_dataBuffer + m_lastPos, MAX_RECV_BUFFER_LEN - m_lastPos, 0);
     if (len < 0) {
-        printf("与服务器断开连接，任务结束。\n");
+        cout << "与服务器断开连接,任务结束." << endl;
         return -1;
     }
+    m_lastPos += len;
+    while (sizeof(DataHeader) <= m_lastPos) {
+        DataHeader *header = (DataHeader *) m_dataBuffer;
+        if (header->dataLength <= m_lastPos) {
+            size_t size = m_lastPos - header->dataLength;
+            OnNetMsg(header);
+            memcpy(m_dataBuffer, m_dataBuffer + header->dataLength, size);
+            m_lastPos -= header->dataLength;
+        } else {
+            break;
+        }
+    }
 
-    DataHeader *header = (DataHeader *) szRecv;
-    recv(m_sock, szRecv + sizeof(DataHeader), header->dataLength - sizeof(DataHeader), 0);
-
-    OnNetMsg(header);
     return 0;
 }
 

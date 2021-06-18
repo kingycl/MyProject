@@ -74,7 +74,7 @@ bool TcpServer::Accept() {
     }
     cout << "New client connect : IP = " << inet_ntoa(clientAddr.sin_addr) << endl;
 
-    m_clients.push_back(clientSock);
+    m_clients.push_back(new ClientSocket(clientSock));
     return true;
 }
 
@@ -84,18 +84,19 @@ void TcpServer::Close() {
     }
 #ifdef _WIN32
     for (auto sockTmp : m_clients) {
-        closesocket(sockTmp);
+        closesocket(sockTmp->GetSocket());
+        delete sockTmp;
     }
     closesocket(m_serverSock);
     WSACleanup();
 #else
     for (auto sockTmp : m_clients) {
-        close(sockTmp);
+        close(sockTmp->GetSocket());
+        delete sockTmp;
     }
     close(m_serverSock);
 #endif
     m_clients.clear();
-    m_serverSock = INVALID_SOCKET;
 }
 
 bool TcpServer::OnRun() {
@@ -114,16 +115,16 @@ bool TcpServer::OnRun() {
 
         SOCKET maxSocket = m_serverSock;
         for (auto client : m_clients) {
-            FD_SET(client, &fdRead);
-            if (client > maxSocket) {
-                maxSocket = client;
+            FD_SET(client->GetSocket(), &fdRead);
+            if (client->GetSocket() > maxSocket) {
+                maxSocket = client->GetSocket();
             }
         }
 
         timeval t = {0, 0};
         int ret = select(maxSocket + 1, &fdRead, &fdWrite, &fdExp, &t);
         if (ret < 0) {
-            printf("select exit!");
+            cout << "select exit!" << endl;
             Close();
             return false;
         }
@@ -132,7 +133,7 @@ bool TcpServer::OnRun() {
             Accept();
         }
         for (int n = (int) m_clients.size() - 1; n >= 0; n--) {
-            if (FD_ISSET(m_clients[n], &fdRead)) {
+            if (FD_ISSET(m_clients[n]->GetSocket(), &fdRead)) {
                 if (-1 == ReceiveData(m_clients[n])) {
                     auto iter = m_clients.begin() + n;
                     if (iter != m_clients.end()) {
@@ -145,17 +146,25 @@ bool TcpServer::OnRun() {
     return true;
 }
 
-int TcpServer::ReceiveData(SOCKET sock) {
-    char szRecv[4096] = {};
-    int nLen = recv(sock, szRecv, sizeof(DataHeader), 0);
-    if (nLen <= 0) {
-        printf("客户端已退出，任务结束。\n");
+int TcpServer::ReceiveData(ClientSocket *client) {
+    int len = recv(client->GetSocket(), client->GetCurBuffer(), MAX_RECV_BUFFER_LEN - client->GetPos(), 0);
+    if (len < 0) {
+        cout << "与服务器断开连接,任务结束." << endl;
         return -1;
     }
-    auto *header = (DataHeader *) szRecv;
-    recv(sock, szRecv + sizeof(DataHeader), header->dataLength - sizeof(DataHeader), 0);
+    client->SetPos(client->GetPos() + len);
+    while (sizeof(DataHeader) <= client->GetPos()) {
+        DataHeader *header = (DataHeader *) client->GetBuffer();
+        if (header->dataLength <= client->GetPos()) {
+            size_t size = client->GetPos() - header->dataLength;
+            OnNetMsg(client->GetSocket(), header);
+            memcpy(client->GetBuffer(), client->GetBuffer() + header->dataLength, size);
+            client->SetPos(client->GetPos() - header->dataLength);
+        } else {
+            break;
+        }
+    }
 
-    OnNetMsg(sock, header);
     return 0;
 }
 
@@ -163,14 +172,14 @@ void TcpServer::OnNetMsg(SOCKET sock, DataHeader *header) {
     switch (header->cmd) {
         case CMD_LOGIN: {
             auto *login = (Login *) header;
-            printf("收到命令：CMD_LOGIN,数据长度：%d,userName=%s PassWord=%s \n", login->dataLength, login->userName, login->PassWord);
+            cout << "收到命令:CMD_LOGIN,数据长度:" << login->dataLength << ",userName=" << login->userName << " PassWord=" << login->PassWord << endl;
             //忽略判断用户密码是否正确的过程
             LoginResult ret;
             SendData(sock, (DataHeader *) &ret);
         } break;
         case CMD_LOGOUT: {
             auto *logout = (Logout *) header;
-            printf("收到命令：CMD_LOGOUT,数据长度：%d,userName=%s \n", logout->dataLength, logout->userName);
+            cout << "收到命令:CMD_LOGOUT,数据长度:" << logout->dataLength << ",userName=" << logout->userName << endl;
             //忽略判断用户密码是否正确的过程
             LogoutResult ret;
             SendData(sock, (DataHeader *) &ret);

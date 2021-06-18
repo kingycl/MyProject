@@ -22,6 +22,38 @@
 #include <cstring>
 #include <vector>
 
+constexpr size_t MAX_RECV_BUFFER_LEN = 102400;
+
+class ClientSocket {
+public:
+    ClientSocket(SOCKET sock) : m_sock(sock) {}
+    ~ClientSocket() = default;
+
+    SOCKET GetSocket() {
+        return m_sock;
+    }
+    char *GetBuffer() {
+        return m_dataBuffer;
+    }
+
+    char *GetCurBuffer() {
+        return m_dataBuffer + m_lastPos;
+    }
+
+    size_t GetPos() const {
+        return m_lastPos;
+    }
+
+    void SetPos(size_t pos) {
+        m_lastPos = pos;
+    }
+
+private:
+    char m_dataBuffer[MAX_RECV_BUFFER_LEN] = {0};
+    size_t m_lastPos = 0;
+    SOCKET m_sock = INVALID_SOCKET;
+};
+
 class TcpServer {
 public:
     TcpServer() = default;
@@ -40,11 +72,11 @@ public:
     }
 
     virtual void OnNetMsg(SOCKET sock, DataHeader *header);
-    int ReceiveData(SOCKET sock);
+    int ReceiveData(ClientSocket *client);
     int SendData(SOCKET sock, DataHeader *header);
 
 private:
-    std::vector<SOCKET> m_clients;
+    std::vector<ClientSocket *> m_clients;
     SOCKET m_serverSock = INVALID_SOCKET;
 };
 

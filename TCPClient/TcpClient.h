@@ -33,12 +33,16 @@ public:
     bool OnRun();
     bool IsRun();
 
-    void OnNetMsg(DataHeader *header);
+    virtual void OnNetMsg(DataHeader *header);
     int ReceiveData();
     int SendData(DataHeader *header);
 
 private:
     SOCKET m_sock = INVALID_SOCKET;
+
+    static constexpr size_t MAX_RECV_BUFFER_LEN = 1024000;
+    char m_dataBuffer[MAX_RECV_BUFFER_LEN] = {0};
+    size_t m_lastPos = 0;
 };
 
 #endif// TCPCLIENT_H

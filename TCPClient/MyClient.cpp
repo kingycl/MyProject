@@ -11,41 +11,51 @@
 
 using namespace std;
 
-void cmdThread(TcpClient *client) {
+bool IS_RUN = true;
+void cmdThread() {
     while (true) {
         char cmdBuf[256] = {};
         scanf("%s", cmdBuf);
         if (0 == strcmp(cmdBuf, "exit")) {
-            client->Close();
-            printf("退出cmdThread线程\n");
+            IS_RUN = false;
+            cout << "退出cmdThread线程" << endl;
             break;
-        } else if (0 == strcmp(cmdBuf, "login")) {
-            Login login;
-            strcpy(login.userName, "lyd");
-            strcpy(login.PassWord, "lydmm");
-            client->SendData((DataHeader *) &login);
-        } else if (0 == strcmp(cmdBuf, "logout")) {
-            Logout logout;
-            strcpy(logout.userName, "lyd");
-            client->SendData((DataHeader *) &logout);
         } else {
-            printf("不支持的命令。\n");
+            cout << "不支持的命令." << endl;
         }
     }
 }
 
 int main() {
 
-    TcpClient client;
-    client.InitSocket();
-    client.Connect("127.0.0.1", 4567);
+    constexpr int cCount = 10;
+    TcpClient *client[cCount];
 
-    std::thread t1(cmdThread, &client);
+    for (auto &n : client) {
+        n = new TcpClient();
+    }
+    for (auto &n : client) {
+        n->InitSocket();
+        n->Connect("127.0.0.1", 4567);
+    }
+
+    std::thread t1(cmdThread);
     t1.detach();
 
-    client.OnRun();
-    client.Close();
+    Login login;
+    strcpy(login.userName, "lyd");
+    strcpy(login.PassWord, "lydmm");
+    while (IS_RUN) {
+        for (auto &n : client) {
+            n->OnRun();
+            n->SendData(&login);
+        }
+    }
 
-    printf("已退出。\n");
+    for (auto &n : client) {
+        n->Close();
+    }
+
+    cout << "已退出." << endl;
     return 0;
 }
